@@ -1,5 +1,10 @@
+# Internal directories
 .claude/
-Data/
+aux/
+
+# Datasets and symlinks
+data
+data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

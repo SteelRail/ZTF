@@ -30,11 +30,12 @@ def load_query(ra, dec, size, max_seeing, root):
 
 def main(args):
     # ======= Init the file structure =======
-    root = Path(args.outdir)
+    root = Path(os.path.expanduser(args.outdir))
     root.mkdir(exist_ok=True, parents=True)
     (root / 'query').mkdir(exist_ok=True, parents=True)
 
     # update local storage for ZTF
+    os.environ['ZTFDATA'] = str(root)
     io.LOCALSOURCE = buildurl.LOCALSOURCE = str(root) + os.sep
 
     # ======= Query ZTF =======
@@ -73,6 +74,6 @@ if __name__ == '__main__':
     parser.add_argument('--dec', type=float, default=22.015, help='Dec of the cutout center in degrees')
     parser.add_argument('--size', type=int, default=32, help='Cutout half-size in arcseconds')
     parser.add_argument('--max-seeing', type=float, default=1.7, help='Maximum allowed seeing in arcseconds')
-    parser.add_argument('--outdir', default='/data/home/jsingh/datasets/ZTF', help='Output directory for downloaded cutouts')
+    parser.add_argument('--outdir', default='~/datasets/ZTF', help='Output directory for downloaded cutouts')
     parser.add_argument('--nprocess', type=int, default=12, help='Number of parallel processes to use for downloading')
     main(parser.parse_args())
