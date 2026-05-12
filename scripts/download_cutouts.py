@@ -9,6 +9,7 @@ from ztfquery import query, io, buildurl
 
 
 def load_query(ra, dec, size, max_seeing, root):
+    ra, dec, max_seeing = round(ra, 3), round(dec, 3), round(max_seeing, 1)
     query_hash = f'ra{ra}_dec{dec}_size{size}_seeing{max_seeing}'
     query_csv = root / 'query' / f'{query_hash}.csv'
     if query_csv.exists():
@@ -68,8 +69,8 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--ra', type=float, default=174.39311202, help='RA of the cutout center in degrees')
-    parser.add_argument('--dec', type=float, default=55.34109511, help='Dec of the cutout center in degrees')
+    parser.add_argument('--ra', type=float, default=83.633, help='RA of the cutout center in degrees')
+    parser.add_argument('--dec', type=float, default=22.015, help='Dec of the cutout center in degrees')
     parser.add_argument('--size', type=int, default=32, help='Cutout half-size in arcseconds')
     parser.add_argument('--max-seeing', type=float, default=1.7, help='Maximum allowed seeing in arcseconds')
     parser.add_argument('--outdir', default='/data/home/jsingh/datasets/ZTF', help='Output directory for downloaded cutouts')
