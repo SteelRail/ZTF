@@ -19,7 +19,7 @@ def load_query(ra, dec, size, max_seeing, root):
         zquery = query.ZTFQuery()
         zquery.load_metadata(
             radec=[ra, dec],
-            size=size / 3600,
+            size=size / 7200,
             sql_query=f'seeing<{max_seeing}',
             kind='sci',
         )
@@ -72,7 +72,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--ra', type=float, default=83.633, help='RA of the cutout center in degrees')
     parser.add_argument('--dec', type=float, default=22.015, help='Dec of the cutout center in degrees')
-    parser.add_argument('--size', type=int, default=32, help='Cutout half-size in arcseconds')
+    parser.add_argument('--size', type=int, default=64, help='Cutout half-size in arcseconds')
     parser.add_argument('--max-seeing', type=float, default=1.7, help='Maximum allowed seeing in arcseconds')
     parser.add_argument('--outdir', default='~/datasets/ZTF', help='Output directory for downloaded cutouts')
     parser.add_argument('--nprocess', type=int, default=12, help='Number of parallel processes to use for downloading')
