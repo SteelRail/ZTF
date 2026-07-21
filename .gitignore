@@ -3,8 +3,7 @@
 aux/
 
 # Datasets and symlinks
-data
-data/
+data/ztf
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

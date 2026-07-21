@@ -1,79 +1,63 @@
 #!/usr/bin/env python
+"""Download ZTF science cutouts and PSF products for one sky position.
 
-import os
-import sys
+Queries IRSA for all ZTF science exposures covering (ra, dec) with seeing
+below --max-seeing (the query is cached under <outdir>/query/), then
+downloads three products per exposure into <outdir>:
+
+    sciimg.fits            science image, cut out around the target
+    sciimgdaopsfcent.fits  pipeline PSF rendering at quadrant center
+    sciimgdao.psf          DAOPHOT PSF model (spatial variation)
+
+Example:
+    python scripts/download_cutouts.py --ra 83.633 --dec 22.015 --size 64
+"""
+
 import argparse
-from time import time
+import sys
 from pathlib import Path
-from ztfquery import query, io, buildurl
+from time import time
 
-
-def load_query(ra, dec, size, max_seeing, root):
-    ra, dec, max_seeing = round(ra, 3), round(dec, 3), round(max_seeing, 1)
-    query_hash = f'ra{ra}_dec{dec}_size{size}_seeing{max_seeing}'
-    query_csv = root / 'query' / f'{query_hash}.csv'
-    if query_csv.exists():
-        print(f'Query {query_hash} already exists. Loading from disk.')
-        zquery = query.ZTFQuery.from_metafile(str(query_csv), format='csv')
-    else:
-        zquery = query.ZTFQuery()
-        zquery.load_metadata(
-            radec=[ra, dec],
-            size=size / 7200,
-            sql_query=f'seeing<{max_seeing}',
-            kind='sci',
-        )
-        zquery.metatable.to_csv(query_csv)
-
-    return zquery
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from src.ztf_data import load_query, SUFFIXES
 
 
 def main(args):
-    # ======= Init the file structure =======
-    root = Path(os.path.expanduser(args.outdir))
-    root.mkdir(exist_ok=True, parents=True)
-    (root / 'query').mkdir(exist_ok=True, parents=True)
+    print("Querying ZTF...")
+    zquery = load_query(args.ra, args.dec, args.size, args.max_seeing, args.outdir)
+    print(f"{len(zquery.metatable)} exposures found\n")
 
-    # update local storage for ZTF
-    os.environ['ZTFDATA'] = str(root)
-    io.LOCALSOURCE = buildurl.LOCALSOURCE = str(root) + os.sep
-
-    # ======= Query ZTF =======
-    print('Querying ZTF...')
-    zquery = load_query(args.ra, args.dec, args.size, args.max_seeing, root)
-    print(f'{len(zquery.metatable)} exposures found', end='\n\n')
-
-    # ======= Download data =======
-    print('Downloading cutouts and PSF info...')
     start_time = time()
-    for suffix in ['sciimg.fits', 'sciimgdaopsfcent.fits', 'sciimgdao.psf']:
-        print(f'\nDownloading {suffix}...')
-
+    for suffix in SUFFIXES:
+        print(f"Downloading {suffix}...")
         kw = {}
-        if suffix == 'sciimg.fits':
+        if suffix == "sciimg.fits":
             kw = dict(cutouts=True, radec=[args.ra, args.dec], cutout_size=args.size)
-
-        if suffix == 'sciimgdao.psf': # TODO: Should be a better way to deal with it.
-            sys.stderr = open(os.devnull, 'w')  # suppress file testing warnings
-
+        if suffix == "sciimgdao.psf":
+            kw = dict(filecheck=False)  # text product; skip FITS validity check
         zquery.download_data(
             suffix,
             nprocess=args.nprocess,
             show_progress=True,
             overwrite=False,
-            **kw
+            **kw,
         )
-        print('\nDone!')
 
-    print(f'\nDone in [{time() - start_time:.2f}s]!')
+    print(f"\nDone in {time() - start_time:.2f}s")
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--ra', type=float, default=83.633, help='RA of the cutout center in degrees')
-    parser.add_argument('--dec', type=float, default=22.015, help='Dec of the cutout center in degrees')
-    parser.add_argument('--size', type=int, default=64, help='Cutout half-size in arcseconds')
-    parser.add_argument('--max-seeing', type=float, default=1.7, help='Maximum allowed seeing in arcseconds')
-    parser.add_argument('--outdir', default='~/datasets/ZTF', help='Output directory for downloaded cutouts')
-    parser.add_argument('--nprocess', type=int, default=12, help='Number of parallel processes to use for downloading')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument("--ra", type=float, default=83.633,
+                        help="cutout center RA (deg); default: Crab Nebula")
+    parser.add_argument("--dec", type=float, default=22.015,
+                        help="cutout center Dec (deg)")
+    parser.add_argument("--size", type=int, default=64,
+                        help="cutout half-size (arcsec)")
+    parser.add_argument("--max-seeing", type=float, default=1.7,
+                        help="maximum allowed seeing (arcsec)")
+    parser.add_argument("--outdir", default="~/datasets/ZTF",
+                        help="local ZTF data root ($ZTFDATA)")
+    parser.add_argument("--nprocess", type=int, default=12,
+                        help="parallel download processes")
     main(parser.parse_args())
